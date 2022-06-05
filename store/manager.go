@@ -194,6 +194,7 @@ func (r *LayerManager) getLayer(ctx context.Context, refspec reference.Spec, dgs
 		go func() {
 			// Avoids to get canceled by client.
 			ctx := context.Background()
+			log.G(ctx).Infof("layer annotations %+v", l.Annotations)
 			gotL, err := r.resolveLayer(ctx, refspec, l)
 			if l.Digest.String() != target.Digest.String() {
 				return // This is not target layer
@@ -255,6 +256,7 @@ func (r *LayerManager) resolveLayer(ctx context.Context, refspec reference.Spec,
 	log.G(ctx).Infof("esgz options = %+v", esgzOpts)
 	l, err := r.resolver.Resolve(ctx, r.hosts, refspec, target, esgzOpts...)
 	if err != nil {
+		log.G(ctx).Errorf("resolve with ref %+v, target is %+v has error %+v", refspec, target, err)
 		return nil, err
 	}
 

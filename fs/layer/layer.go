@@ -258,6 +258,7 @@ func (r *Resolver) Resolve(ctx context.Context, hosts source.RegistryHosts, refs
 	// Resolve the blob.
 	blobR, err := r.resolveBlob(ctx, hosts, refspec, desc)
 	if err != nil {
+		log.G(ctx).Errorf("resolve blod has error: %+v", err)
 		return nil, fmt.Errorf("failed to resolve the blob: %w", err)
 	}
 	defer func() {
