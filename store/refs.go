@@ -165,6 +165,7 @@ func (p *refPool) readManifestAndConfig(refspec reference.Spec) (manifest ocispe
 
 func (p *refPool) writeManifestAndConfig(refspec reference.Spec, manifest ocispec.Manifest, config ocispec.Image) error {
 	mPath, cPath := p.manifestFile(refspec), p.configFile(refspec)
+	log.G(context.TODO()).Infof("mpath = %s, cpath = %s", mPath, cPath)
 	if err := os.MkdirAll(filepath.Dir(mPath), 0700); err != nil {
 		return err
 	}

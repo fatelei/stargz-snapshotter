@@ -170,6 +170,7 @@ var _ = (fusefs.NodeLookuper)((*rootnode)(nil))
 // and returns refnode of the specified name
 func (n *rootnode) Lookup(ctx context.Context, name string, out *fuse.EntryOut) (*fusefs.Inode, syscall.Errno) {
 	// lookup on memory nodes
+	log.GetLogger(ctx).Infof("root node lookup name = %s", name)
 	if cn := n.GetChild(name); cn != nil {
 		switch tn := cn.Operations().(type) {
 		case *fusefs.MemSymlink:
@@ -206,6 +207,7 @@ func (n *rootnode) Lookup(ctx context.Context, name string, out *fuse.EntryOut) 
 		log.G(ctx).WithError(err).Warnf("invalid reference %q for %q", ref, name)
 		return nil, syscall.EINVAL
 	}
+	log.GetLogger(ctx).Infof("parse ref get %+v", refspec)
 	sAttr := defaultDirAttr(&out.Attr)
 	cn := &refnode{
 		fs:  n.fs,
@@ -236,6 +238,7 @@ var _ = (fusefs.NodeLookuper)((*refnode)(nil))
 // Lookup returns layernode of the specified name
 func (n *refnode) Lookup(ctx context.Context, name string, out *fuse.EntryOut) (*fusefs.Inode, syscall.Errno) {
 	// lookup on memory nodes
+	log.GetLogger(ctx).Infof("ref node lookup name = %s", name)
 	if cn := n.GetChild(name); cn != nil {
 		switch tn := cn.Operations().(type) {
 		case *layernode:
@@ -252,6 +255,7 @@ func (n *refnode) Lookup(ctx context.Context, name string, out *fuse.EntryOut) (
 		log.G(ctx).WithError(err).Warnf("invalid digest for %q", name)
 		return nil, syscall.EINVAL
 	}
+	log.GetLogger(ctx).Infof("targetDigest = %+v", targetDigest)
 	sAttr := defaultDirAttr(&out.Attr)
 	cn := &layernode{
 		fs:      n.fs,
@@ -330,6 +334,7 @@ var _ = (fusefs.NodeLookuper)((*layernode)(nil))
 
 // Lookup routes to the target file stored in the pool, based on the specified file name.
 func (n *layernode) Lookup(ctx context.Context, name string, out *fuse.EntryOut) (*fusefs.Inode, syscall.Errno) {
+	log.GetLogger(ctx).Infof("layer node lookup name = %s", name)
 	switch name {
 	case layerInfoLink:
 		info, err := n.fs.layerManager.getLayerInfo(ctx, n.refnode.ref, n.digest)
@@ -373,6 +378,7 @@ func (n *layernode) Lookup(ctx context.Context, name string, out *fuse.EntryOut)
 		}
 
 		// Resolve layer
+		log.G(ctx).Infof("get layer %+v, digest %s", n.refnode.ref, n.digest)
 		l, err := n.fs.layerManager.getLayer(ctx, n.refnode.ref, n.digest)
 		if err != nil {
 			cErr := ctx.Err()
@@ -467,6 +473,7 @@ var _ = (fusefs.InodeEmbedder)((*blobnode)(nil))
 var _ = (fusefs.NodeOpener)((*blobnode)(nil))
 
 func (n *blobnode) Open(ctx context.Context, flags uint32) (fh fusefs.FileHandle, fuseFlags uint32, errno syscall.Errno) {
+	log.G(ctx).Infof("open blob file %+v with flags: %d", n.attr, flags)
 	return &blobfile{l: n.l}, 0, 0
 }
 
@@ -478,11 +485,13 @@ type blobfile struct {
 var _ = (fusefs.FileReader)((*blobfile)(nil))
 
 func (f *blobfile) Read(ctx context.Context, dest []byte, off int64) (fuse.ReadResult, syscall.Errno) {
+	log.G(ctx).Infof("reading blob file %d", off)
 	s, err := f.l.ReadAt(dest, off,
 		remote.WithContext(ctx),              // Make cancellable
 		remote.WithCacheOpts(cache.Direct()), // Do not pollute mem cache
 	)
 	if err != nil && err != io.EOF {
+		log.G(ctx).Errorf("read occur error: %+v", err)
 		return nil, syscall.EIO
 	}
 	return fuse.ReadResultData(dest[:s]), 0

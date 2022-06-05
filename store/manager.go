@@ -156,6 +156,7 @@ func (r *LayerManager) getLayer(ctx context.Context, refspec reference.Spec, dgs
 		resultChan = make(chan layer.Layer)
 		errChan    = make(chan error)
 	)
+	// get manifest from cache.
 	manifest, _, err := r.refPool.loadRef(ctx, refspec)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get manifest and config: %w", err)
@@ -251,6 +252,7 @@ func (r *LayerManager) resolveLayer(ctx context.Context, refspec reference.Spec,
 			}
 		}
 	}
+	log.G(ctx).Infof("esgz options = %+v", esgzOpts)
 	l, err := r.resolver.Resolve(ctx, r.hosts, refspec, target, esgzOpts...)
 	if err != nil {
 		return nil, err
@@ -286,6 +288,7 @@ func (r *LayerManager) resolveLayer(ctx context.Context, refspec reference.Spec,
 	// Check() for this layer waits for the prefetch completion.
 	if !r.noprefetch {
 		go func() {
+			log.G(ctx).Infof("start prefetch with size %d", r.prefetchSize)
 			r.backgroundTaskManager.DoPrioritizedTask()
 			defer r.backgroundTaskManager.DonePrioritizedTask()
 			if err := l.Prefetch(r.prefetchSize); err != nil {
