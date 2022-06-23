@@ -150,6 +150,7 @@ var _ = (fusefs.InodeEmbedder)((*node)(nil))
 var _ = (fusefs.NodeReaddirer)((*node)(nil))
 
 func (n *node) Readdir(ctx context.Context) (fusefs.DirStream, syscall.Errno) {
+	log.G(ctx).Infof("layer node read dir %v", n.id)
 	ents, errno := n.readdir()
 	if errno != 0 {
 		return nil, errno
@@ -236,7 +237,7 @@ func (n *node) readdir() ([]fuse.DirEntry, syscall.Errno) {
 var _ = (fusefs.NodeLookuper)((*node)(nil))
 
 func (n *node) Lookup(ctx context.Context, name string, out *fuse.EntryOut) (*fusefs.Inode, syscall.Errno) {
-
+	log.G(ctx).Infof("layer node lookup %s", name)
 	isRoot := n.isRootNode()
 
 	// We don't want to show prefetch landmarks in "/".
@@ -325,6 +326,7 @@ func (n *node) Lookup(ctx context.Context, name string, out *fuse.EntryOut) (*fu
 var _ = (fusefs.NodeOpener)((*node)(nil))
 
 func (n *node) Open(ctx context.Context, flags uint32) (fh fusefs.FileHandle, fuseFlags uint32, errno syscall.Errno) {
+	log.G(ctx).Infof("layer node open file %v", n.id)
 	ra, err := n.fs.r.OpenFile(n.id)
 	if err != nil {
 		n.fs.s.report(fmt.Errorf("node.Open: %v", err))
